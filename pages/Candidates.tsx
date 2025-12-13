@@ -14,21 +14,52 @@ import {
 import { Candidate } from '../types';
 
 export const Candidates: React.FC = () => {
-  const { candidates, updateCandidateStatus, deleteCandidate } = useApp();
+  const { candidates: allCandidates, updateCandidateStatus, deleteCandidate } = useApp();
   const [search, setSearch] = useState('');
+  const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>(allCandidates);
+  const [isSearching, setIsSearching] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'timeline'>('profile');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const filteredCandidates = candidates.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
-    c.role.toLowerCase().includes(search.toLowerCase()) ||
-    c.skills.some(s => s.toLowerCase().includes(search.toLowerCase()))
-  ).sort((a, b) => {
-    if (search) return b.fitScore - a.fitScore;
-    return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
-  });
+  // Update filtered candidates when allCandidates changes (e.g., new candidate added)
+  React.useEffect(() => {
+    if (!search) {
+      setFilteredCandidates(allCandidates);
+    }
+  }, [allCandidates, search]);
+
+  // Debounced search with vector search
+  React.useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      if (!search.trim()) {
+        setFilteredCandidates(allCandidates);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const { candidateService } = await import('../services/candidateService');
+        const results = await candidateService.search(search);
+        setFilteredCandidates(results);
+      } catch (error) {
+        console.error('Search error:', error);
+        // Fallback to client-side filtering
+        const filtered = allCandidates.filter(c => 
+          c.name.toLowerCase().includes(search.toLowerCase()) || 
+          c.role.toLowerCase().includes(search.toLowerCase()) ||
+          c.skills.some(s => s.toLowerCase().includes(search.toLowerCase()))
+        );
+        setFilteredCandidates(filtered);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [search, allCandidates]);
 
   // Select All Logic
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +102,7 @@ export const Candidates: React.FC = () => {
             </div>
             <input
               type="text"
-              placeholder="Search by name, role, skills (e.g. 'React Developer')..."
+              placeholder="Search by name, role, skills (e.g. 'experienced React developer with TypeScript')..."
               className="
                 block w-full pl-12 pr-4 py-3.5 
                 bg-white border border-gray-200 rounded-xl 
@@ -84,6 +115,11 @@ export const Candidates: React.FC = () => {
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
             />
+            {isSearching && (
+              <div className="absolute inset-y-0 right-12 flex items-center">
+                <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
             <div className="absolute inset-y-0 right-2 flex items-center">
                  <button className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Advanced Filters">
                     <SlidersHorizontal size={18} />

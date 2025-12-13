@@ -19,7 +19,7 @@ create table candidates (
   location text,
   resume_url text,
   resume_text text, -- Extracted text for search
-  embedding vector(1536), -- For semantic search
+  embedding vector(768), -- For semantic search (matches Hugging Face model output)
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -33,6 +33,7 @@ create table jobs (
   status job_status default 'Open',
   skills_required jsonb default '[]'::jsonb,
   description text,
+  embedding vector(768), -- For semantic search (matches Hugging Face model output)
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -75,6 +76,66 @@ create index timeline_candidate_id_idx on timeline(candidate_id);
 
 -- HNSW Index for vector search
 create index candidates_embedding_idx on candidates using hnsw (embedding vector_cosine_ops);
+create index jobs_embedding_idx on jobs using hnsw (embedding vector_cosine_ops);
+
+-- Vector search functions for semantic search
+create or replace function match_candidates(
+  query_embedding text,
+  match_threshold float,
+  match_count int
+)
+returns table (
+  candidate jsonb,
+  similarity float
+)
+language plpgsql
+as $$
+declare
+  query_vec vector(768);
+begin
+  -- Cast text input to vector type
+  query_vec := query_embedding::vector(768);
+  
+  return query
+  select
+    to_jsonb(c.*) as candidate,
+    1 - (c.embedding <=> query_vec) as similarity
+  from candidates c
+  where c.embedding is not null
+    and 1 - (c.embedding <=> query_vec) > match_threshold
+  order by c.embedding <=> query_vec
+  limit match_count;
+end;
+$$;
+
+create or replace function match_jobs(
+  query_embedding text,
+  match_threshold float,
+  match_count int
+)
+returns table (
+  job jsonb,
+  similarity float
+)
+language plpgsql
+as $$
+declare
+  query_vec vector(768);
+begin
+  -- Cast text input to vector type
+  query_vec := query_embedding::vector(768);
+  
+  return query
+  select
+    to_jsonb(j.*) as job,
+    1 - (j.embedding <=> query_vec) as similarity
+  from jobs j
+  where j.embedding is not null
+    and 1 - (j.embedding <=> query_vec) > match_threshold
+  order by j.embedding <=> query_vec
+  limit match_count;
+end;
+$$;
 
 -- RLS Policies (Enable RLS but allow public access for demo/simplicity as requested, or restrictive)
 -- For this "hackathon-style" demo, we will enable RLS but create open policies for anon/authenticated 

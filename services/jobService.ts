@@ -1,6 +1,7 @@
 
 import { supabase } from '../lib/supabase';
 import { Job, Status, Candidate } from '../types';
+import { generateEmbedding, vectorSearchJobs } from './searchService';
 
 export const jobService = {
     async getAll() {
@@ -25,18 +26,65 @@ export const jobService = {
     },
 
     async create(job: Omit<Job, 'id' | 'createdAt' | 'candidatesCount' | 'stages'>) {
+        // Generate embedding for semantic search
+        // Combine title and department for embedding (description and skills_required are in DB but not in Job type)
+        const embeddingText = [
+            job.title,
+            job.department || '',
+        ].filter(Boolean).join(' ');
+
+        let embedding: number[] | null = null;
+        try {
+            embedding = await generateEmbedding(embeddingText);
+        } catch (error) {
+            console.warn('Failed to generate embedding for job, continuing without it:', error);
+        }
+
+        const insertData: any = {
+            title: job.title,
+            department: job.department,
+            openings: job.openings,
+            status: job.status,
+        };
+
+        if (embedding) {
+            insertData.embedding = `[${embedding.join(',')}]`;
+        }
+
         const { data, error } = await supabase
             .from('jobs')
-            .insert([{
-                title: job.title,
-                department: job.department,
-                openings: job.openings,
-                status: job.status,
-            }])
+            .insert([insertData])
             .select()
             .single();
 
         if (error) throw error;
+        
+        // After creation, update embedding if we have description/skills from DB
+        const { data: fullJob } = await supabase
+            .from('jobs')
+            .select('description, skills_required')
+            .eq('id', data.id)
+            .single();
+
+        if (fullJob && (fullJob.description || fullJob.skills_required)) {
+            const fullEmbeddingText = [
+                job.title,
+                job.department || '',
+                fullJob.description || '',
+                Array.isArray(fullJob.skills_required) ? fullJob.skills_required.join(', ') : '',
+            ].filter(Boolean).join(' ');
+
+            try {
+                const fullEmbedding = await generateEmbedding(fullEmbeddingText);
+                await supabase
+                    .from('jobs')
+                    .update({ embedding: `[${fullEmbedding.join(',')}]` })
+                    .eq('id', data.id);
+            } catch (error) {
+                console.warn('Failed to update job embedding with full text:', error);
+            }
+        }
+
         return mapToJob(data);
     },
 
@@ -88,6 +136,36 @@ export const jobService = {
             }]);
 
         if (error) throw error;
+    },
+
+    // Semantic search using vector embeddings
+    async search(query: string): Promise<Job[]> {
+        if (!query || query.trim().length === 0) {
+            // If empty query, return all jobs
+            return this.getAll();
+        }
+
+        try {
+            // Use vector search for semantic matching
+            const results = await vectorSearchJobs(query.trim(), 50);
+            
+            // Map results to Job format
+            return results.map(({ job, similarity }) => {
+                return mapToJob(job);
+            });
+        } catch (error) {
+            console.error('Vector search failed, falling back to text search:', error);
+            
+            // Fallback to text-based search if vector search fails
+            const { data, error: textError } = await supabase
+                .from('jobs')
+                .select('*')
+                .or(`title.ilike.%${query}%,department.ilike.%${query}%`)
+                .order('created_at', { ascending: false });
+
+            if (textError) throw textError;
+            return data.map(mapToJob);
+        }
     }
 };
 

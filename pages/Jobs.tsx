@@ -8,14 +8,48 @@ import { Plus, MoreHorizontal, Users, Search } from 'lucide-react';
 import { CreateJobModal } from '../components/jobs/CreateJobModal';
 
 export const Jobs: React.FC = () => {
-  const { jobs } = useApp();
+  const { jobs: allJobs } = useApp();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [filteredJobs, setFilteredJobs] = useState(allJobs);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const filteredJobs = jobs.filter(j => 
-    j.title.toLowerCase().includes(search.toLowerCase()) ||
-    j.department.toLowerCase().includes(search.toLowerCase())
-  );
+  // Update filtered jobs when allJobs changes
+  React.useEffect(() => {
+    if (!search) {
+      setFilteredJobs(allJobs);
+    }
+  }, [allJobs, search]);
+
+  // Debounced search with vector search
+  React.useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      if (!search.trim()) {
+        setFilteredJobs(allJobs);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const { jobService } = await import('../services/jobService');
+        const results = await jobService.search(search);
+        setFilteredJobs(results);
+      } catch (error) {
+        console.error('Search error:', error);
+        // Fallback to client-side filtering
+        const filtered = allJobs.filter(j => 
+          j.title.toLowerCase().includes(search.toLowerCase()) ||
+          j.department.toLowerCase().includes(search.toLowerCase())
+        );
+        setFilteredJobs(filtered);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [search, allJobs]);
 
   return (
     <div className="space-y-8">
@@ -33,11 +67,16 @@ export const Jobs: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input
               type="text"
-              placeholder="Search jobs..."
+              placeholder="Search jobs (e.g. 'software engineering role in product team')..."
               className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all bg-white shadow-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
          </div>
          <div className="flex items-center gap-2">
              {/* Placeholders for sorting/filtering if needed later */}
