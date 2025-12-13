@@ -221,6 +221,47 @@ export const jobService = {
             if (textError) throw textError;
             return data.map(mapToJob);
         }
+    },
+
+    async generateMissingEmbeddings() {
+        const { data: jobs, error } = await supabase
+            .from('jobs')
+            .select('*')
+            .is('embedding', null);
+
+        if (error) {
+            console.error('Error fetching jobs with missing embeddings:', error);
+            return;
+        }
+
+        if (!jobs || jobs.length === 0) return;
+
+        console.log(`Found ${jobs.length} jobs with missing embeddings. Regenerating...`);
+
+        for (const job of jobs) {
+            const embeddingText = [
+                job.title,
+                job.department || '',
+                job.description || '',
+                Array.isArray(job.skills_required) ? job.skills_required.join(', ') : '',
+            ].filter(Boolean).join(' ');
+
+            try {
+                const embedding = await generateEmbedding(embeddingText);
+                // Format as string for vector type update
+                const embeddingString = `[${embedding.join(',')}]`;
+                
+                const { error: updateError } = await supabase
+                    .from('jobs')
+                    .update({ embedding: embeddingString } as any)
+                    .eq('id', job.id);
+                
+                if (updateError) throw updateError;
+                console.log(`Regenerated embedding for job: ${job.title} (${job.id})`);
+            } catch (err) {
+                console.error(`Failed to regenerate embedding for job ${job.id}:`, err);
+            }
+        }
     }
 };
 

@@ -26,68 +26,67 @@ Deno.serve(async (req) => {
             )
         }
 
-        // Use Hugging Face Inference API (free, no API key required for public models)
-        // Using sentence-transformers/all-mpnet-base-v2 which outputs 768 dimensions
-        const model = 'sentence-transformers/all-mpnet-base-v2'
-        const hfUrl = `https://api-inference.huggingface.co/pipeline/feature-extraction/${model}`
+        // Get Gemini API key from environment
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+        
+        if (!GEMINI_API_KEY) {
+            console.error('GEMINI_API_KEY is not set')
+            return new Response(
+                JSON.stringify({ error: 'Embedding service not configured' }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
+            )
+        }
+
+        // Use Gemini text-embedding-004 model
+        const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent'
         
         let retries = 3
         let embedding: number[] | null = null
         
         while (retries > 0 && !embedding) {
             try {
-                const response = await fetch(hfUrl, {
+                const response = await fetch(`${geminiUrl}?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ 
-                        inputs: text,
-                        options: { 
-                            wait_for_model: true,
-                            use_cache: false
-                        } 
+                    body: JSON.stringify({
+                        model: 'models/text-embedding-004',
+                        content: {
+                            parts: [{
+                                text: text
+                            }]
+                        }
                     })
                 })
 
                 if (!response.ok) {
                     const errorText = await response.text()
-                    // If model is loading, wait and retry
-                    if (response.status === 503) {
-                        await new Promise(resolve => setTimeout(resolve, 3000))
-                        retries--
-                        continue
-                    }
-                    throw new Error(`Hugging Face API error: ${response.status} - ${errorText}`)
+                    throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
                 }
 
                 const data = await response.json()
                 
-                // Hugging Face feature extraction returns nested array: [[embedding]]
-                if (Array.isArray(data)) {
-                    if (data.length > 0 && Array.isArray(data[0])) {
-                        embedding = data[0] // Get first embedding array
-                    } else if (data.length > 0 && typeof data[0] === 'number') {
-                        embedding = data // Direct array of numbers
-                    } else {
-                        throw new Error(`Unexpected response format: ${JSON.stringify(data).substring(0, 200)}`)
-                    }
+                // Extract embedding from Gemini response
+                if (data.embedding && Array.isArray(data.embedding.values)) {
+                    embedding = data.embedding.values
                 } else {
-                    throw new Error(`Response is not an array: ${JSON.stringify(data).substring(0, 200)}`)
+                    throw new Error(`Unexpected response format: ${JSON.stringify(data).substring(0, 200)}`)
                 }
                 
-                // Ensure we have 768 dimensions (pad or truncate if needed)
-                if (embedding && embedding.length !== 768) {
-                    if (embedding.length > 768) {
+                // Gemini text-embedding-004 produces 768 dimensions by default
+                if (embedding && embedding.length === 768) {
+                    break
+                } else {
+                    console.warn(`Unexpected embedding dimension: ${embedding?.length}, expected 768`)
+                    // Pad or truncate to 768 dimensions if needed
+                    if (embedding && embedding.length > 768) {
                         embedding = embedding.slice(0, 768)
-                    } else {
+                    } else if (embedding) {
                         embedding = [...embedding, ...Array(768 - embedding.length).fill(0)]
                     }
                 }
                 
-                if (embedding && embedding.length === 768) {
-                    break
-                }
             } catch (error) {
                 const errorMsg = error instanceof Error ? error.message : String(error)
                 console.error(`Attempt ${4 - retries} failed:`, errorMsg)

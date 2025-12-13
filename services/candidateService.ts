@@ -167,6 +167,48 @@ export const candidateService = {
             if (textError) throw textError;
             return data.map(mapToCandidate);
         }
+    },
+
+    async generateMissingEmbeddings() {
+        const { data: candidates, error } = await supabase
+            .from('candidates')
+            .select('*')
+            .is('embedding', null);
+
+        if (error) {
+            console.error('Error fetching candidates with missing embeddings:', error);
+            return;
+        }
+
+        if (!candidates || candidates.length === 0) return;
+
+        console.log(`Found ${candidates.length} candidates with missing embeddings. Regenerating...`);
+
+        for (const candidate of candidates) {
+            const embeddingText = [
+                candidate.name,
+                candidate.role || '',
+                Array.isArray(candidate.skills) ? candidate.skills.join(', ') : '',
+                candidate.location || '',
+                candidate.experience || ''
+            ].filter(Boolean).join(' ');
+
+            try {
+                const embedding = await generateEmbedding(embeddingText);
+                // Format as string for vector type update
+                const embeddingString = `[${embedding.join(',')}]`;
+                
+                const { error: updateError } = await supabase
+                    .from('candidates')
+                    .update({ embedding: embeddingString } as any)
+                    .eq('id', candidate.id);
+
+                if (updateError) throw updateError;
+                console.log(`Regenerated embedding for candidate: ${candidate.name} (${candidate.id})`);
+            } catch (err) {
+                console.error(`Failed to regenerate embedding for candidate ${candidate.id}:`, err);
+            }
+        }
     }
 };
 
