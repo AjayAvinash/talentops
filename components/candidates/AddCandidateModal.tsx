@@ -8,10 +8,16 @@ import { UploadCloud, X } from 'lucide-react';
 interface AddCandidateModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: (candidateId: string) => Promise<void>;
 }
 
-export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose }) => {
+export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { addCandidate } = useApp();
+  // ... state ...
+
+  // handleFileChange ...
+
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -72,9 +78,9 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, on
     }, 1500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addCandidate({
+    const result = await addCandidate({
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
@@ -82,6 +88,11 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, on
       skills: skills,
       experience: parseInt(formData.experience) || 0,
     });
+
+    if (result && onSuccess) {
+      await onSuccess(result.id);
+    }
+
     setFormData({ name: '', email: '', phone: '', role: '', experience: '' });
     setSkills([]);
     setSkillInput('');

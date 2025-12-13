@@ -8,7 +8,7 @@ interface AppContextType {
   candidates: Candidate[];
   jobs: Job[];
   activities: Activity[];
-  addCandidate: (candidate: Omit<Candidate, 'id' | 'addedAt' | 'fitScore' | 'status'>) => void;
+  addCandidate: (candidate: Omit<Candidate, 'id' | 'addedAt' | 'fitScore' | 'status'>) => Promise<Candidate | undefined>;
   updateCandidateStatus: (id: string, status: Candidate['status']) => void;
   deleteCandidate: (id: string) => void;
   addJob: (job: Omit<Job, 'id' | 'createdAt' | 'candidatesCount' | 'stages'>) => void;
@@ -56,9 +56,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: 'New Candidate',
         description: `${created.name} was added manually`
       });
+      return created;
     } catch (e) {
       console.error(e);
       alert('Error adding candidate');
+      return undefined;
     }
   };
 

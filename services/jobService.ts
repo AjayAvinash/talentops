@@ -58,7 +58,7 @@ export const jobService = {
             .single();
 
         if (error) throw error;
-        
+
         // After creation, update embedding if we have description/skills from DB
         const { data: fullJob } = await supabase
             .from('jobs')
@@ -89,6 +89,36 @@ export const jobService = {
     },
 
     // Get candidates for a specific job, organized for the board
+    async assignCandidate(jobId: string, candidateId: string, status: Status = 'Applied') {
+        const { error } = await supabase
+            .from('job_candidates')
+            .insert([{
+                job_id: jobId,
+                candidate_id: candidateId,
+                status: status
+            }]);
+
+        if (error) throw error;
+
+        // Sync global candidate status
+        await supabase
+            .from('candidates')
+            .update({ status: status })
+            .eq('id', candidateId);
+
+        // Get job title for timeline
+        const { data: job } = await supabase.from('jobs').select('title').eq('id', jobId).single();
+
+        // Log to timeline
+        const { timelineService } = await import('./timelineService');
+        await timelineService.create({
+            candidateId,
+            jobId,
+            type: 'assignment', // Fixed: matches enum 'assignment'
+            title: `Applied to ${job?.title || 'Job'}`,
+            description: `Candidate was assigned to ${status} stage`
+        });
+    },
     async getBoard(jobId: string) {
         const { data, error } = await supabase
             .from('job_candidates')
@@ -114,7 +144,7 @@ export const jobService = {
         }));
     },
 
-    async updateStage(jobId: string, candidateId: string, status: Status, index: number) {
+    async updateStage(jobId: string, candidateId: string, status: Status, index: number, jobTitle?: string) {
         // 1. Update status
         // 2. Update order (if we implement strict ordering)
         const { error } = await supabase
@@ -124,18 +154,43 @@ export const jobService = {
             .eq('candidate_id', candidateId);
 
         if (error) throw error;
+
+        // Log to timeline
+        if (jobTitle) {
+            const { timelineService } = await import('./timelineService');
+            await timelineService.create({
+                candidateId,
+                jobId,
+                type: 'stage_change', // Fixed: matches enum 'stage_change'
+                title: `Moved to ${status}`,
+                description: `Candidate was moved to ${status} stage for ${jobTitle}`
+            });
+        }
     },
 
-    async assignCandidate(jobId: string, candidateId: string) {
+    async rejectCandidate(jobId: string, candidateId: string, reason: string, rating: number, jobTitle?: string) {
+        // Update status to rejected
         const { error } = await supabase
             .from('job_candidates')
-            .insert([{
-                job_id: jobId,
-                candidate_id: candidateId,
-                status: 'Applied'
-            }]);
+            .update({
+                status: 'Rejected',
+                rating: rating, // Assuming we have a rating column or store it in jsonb, let's check schema. We have rating column in job_candidates.
+                updated_at: new Date().toISOString()
+            })
+            .eq('job_id', jobId)
+            .eq('candidate_id', candidateId);
 
         if (error) throw error;
+
+        // Log to timeline
+        const { timelineService } = await import('./timelineService');
+        await timelineService.create({
+            candidateId,
+            jobId,
+            type: 'stage_change', // Fixed: 'rejection' is not in enum, using 'stage_change' as it maps to Rejected status
+            title: 'Application Rejected',
+            description: `Rejected for ${jobTitle || 'job'}. Reason: ${reason}. Rating: ${rating}/5`
+        });
     },
 
     // Semantic search using vector embeddings
@@ -148,14 +203,14 @@ export const jobService = {
         try {
             // Use vector search for semantic matching
             const results = await vectorSearchJobs(query.trim(), 50);
-            
+
             // Map results to Job format
             return results.map(({ job, similarity }) => {
                 return mapToJob(job);
             });
         } catch (error) {
             console.error('Vector search failed, falling back to text search:', error);
-            
+
             // Fallback to text-based search if vector search fails
             const { data, error: textError } = await supabase
                 .from('jobs')
