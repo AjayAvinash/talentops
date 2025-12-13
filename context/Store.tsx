@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Candidate, Job, Activity } from '../types';
-import { MOCK_CANDIDATES, MOCK_JOBS, MOCK_ACTIVITIES } from '../constants';
+import { candidateService } from '../services/candidateService';
+import { jobService } from '../services/jobService';
+import { timelineService } from '../services/timelineService';
 
 interface AppContextType {
   candidates: Candidate[];
   jobs: Job[];
   activities: Activity[];
-  addCandidate: (candidate: Omit<Candidate, 'id' | 'addedAt' | 'fitScore'>) => void;
+  addCandidate: (candidate: Omit<Candidate, 'id' | 'addedAt' | 'fitScore' | 'status'>) => void;
   updateCandidateStatus: (id: string, status: Candidate['status']) => void;
   deleteCandidate: (id: string) => void;
   addJob: (job: Omit<Job, 'id' | 'createdAt' | 'candidatesCount' | 'stages'>) => void;
@@ -21,70 +23,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Simulate initial fetch
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCandidates(MOCK_CANDIDATES);
-      setJobs(MOCK_JOBS);
-      setActivities(MOCK_ACTIVITIES);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [fetchedCandidates, fetchedJobs] = await Promise.all([
+        candidateService.getAll(),
+        jobService.getAll()
+      ]);
+      setCandidates(fetchedCandidates);
+      setJobs(fetchedJobs);
+      // Future: Fetch timeline/activities. For now empty or we could fetch recent global events if API supported it.
+    } catch (error) {
+      console.error('Failed to fetch data', error);
+    } finally {
       setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const addCandidate = (newCandidateData: Omit<Candidate, 'id' | 'addedAt' | 'fitScore'>) => {
-    const newCandidate: Candidate = {
-      ...newCandidateData,
-      id: `c${Date.now()}`,
-      addedAt: new Date().toISOString(),
-      fitScore: Math.floor(Math.random() * (98 - 70) + 70), // Random fit score for demo
-    };
-    setCandidates((prev) => [newCandidate, ...prev]);
-    
-    // Add activity
-    const newActivity: Activity = {
-      id: `a${Date.now()}`,
-      type: 'upload',
-      title: 'New Candidate',
-      description: `${newCandidate.name} was added manually`,
-      timestamp: new Date().toISOString(),
-    };
-    setActivities(prev => [newActivity, ...prev]);
+    }
   };
 
-  const updateCandidateStatus = (id: string, status: Candidate['status']) => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'addedAt' | 'fitScore' | 'status'>) => {
+    try {
+      const created = await candidateService.create(newCandidateData);
+      setCandidates((prev) => [created, ...prev]);
+
+      // Add timeline event
+      await timelineService.create({
+        candidateId: created.id,
+        type: 'upload',
+        title: 'New Candidate',
+        description: `${created.name} was added manually`
+      });
+    } catch (e) {
+      console.error(e);
+      alert('Error adding candidate');
+    }
+  };
+
+  const updateCandidateStatus = async (id: string, status: Candidate['status']) => {
+    // Optimistic update for UI
     setCandidates((prev) =>
       prev.map((c) => (c.id === id ? { ...c, status } : c))
     );
-     // Add activity
-     const candidate = candidates.find(c => c.id === id);
-     if(candidate) {
-       const newActivity: Activity = {
-         id: `a${Date.now()}`,
-         type: 'stage_change',
-         title: 'Status Updated',
-         description: `${candidate.name} moved to ${status}`,
-         timestamp: new Date().toISOString(),
-       };
-       setActivities(prev => [newActivity, ...prev]);
-     }
   };
 
-  const deleteCandidate = (id: string) => {
-    setCandidates((prev) => prev.filter((c) => c.id !== id));
+  const deleteCandidate = async (id: string) => {
+    try {
+      await candidateService.delete(id);
+      setCandidates((prev) => prev.filter((c) => c.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Error deleting candidate');
+    }
   };
 
-  const addJob = (newJobData: Omit<Job, 'id' | 'createdAt' | 'candidatesCount' | 'stages'>) => {
-    const newJob: Job = {
-      ...newJobData,
-      id: `j${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      candidatesCount: 0,
-      stages: {
-        Applied: [], Screening: [], Technical: [], Manager: [], Offer: [], Hired: [], Rejected: []
-      }
-    };
-    setJobs(prev => [newJob, ...prev]);
+  const addJob = async (newJobData: Omit<Job, 'id' | 'createdAt' | 'candidatesCount' | 'stages'>) => {
+    try {
+      const created = await jobService.create({
+        ...newJobData,
+        status: 'Open'
+      });
+      setJobs(prev => [created, ...prev]);
+    } catch (e) {
+      console.error(e);
+      alert('Error adding job');
+    }
   };
 
   return (

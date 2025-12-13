@@ -27,7 +27,6 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose 
       title: formData.title,
       department: formData.department,
       openings: parseInt(formData.openings) || 1,
-      status: 'Open'
     });
     setFormData({ title: '', department: '', openings: '1' });
     onClose();
@@ -36,34 +35,34 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ isOpen, onClose 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Job">
       <form onSubmit={handleSubmit} className="space-y-5">
-        <Input 
-          label="Job Title" 
-          name="title" 
-          placeholder="e.g. Senior Product Designer" 
-          required 
-          value={formData.title} 
+        <Input
+          label="Job Title"
+          name="title"
+          placeholder="e.g. Senior Product Designer"
+          required
+          value={formData.title}
           onChange={handleChange}
           autoFocus
         />
-        
-        <Input 
-          label="Department" 
-          name="department" 
-          placeholder="e.g. Design, Engineering, Marketing" 
-          required 
-          value={formData.department} 
-          onChange={handleChange} 
+
+        <Input
+          label="Department"
+          name="department"
+          placeholder="e.g. Design, Engineering, Marketing"
+          required
+          value={formData.department}
+          onChange={handleChange}
         />
-        
-        <Input 
-          label="Number of Openings" 
-          name="openings" 
-          type="number" 
+
+        <Input
+          label="Number of Openings"
+          name="openings"
+          type="number"
           min="1"
-          placeholder="1" 
-          required 
-          value={formData.openings} 
-          onChange={handleChange} 
+          placeholder="1"
+          required
+          value={formData.openings}
+          onChange={handleChange}
         />
 
         <div className="pt-4 flex justify-end gap-3">

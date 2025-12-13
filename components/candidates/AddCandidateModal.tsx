@@ -47,6 +47,31 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, on
     setSkills(skills.filter(s => s !== skillToRemove));
   };
 
+  // File upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    // Simulate parsing
+    setTimeout(() => {
+      setFormData(prev => ({
+        ...prev,
+        name: "Alex Morgan",
+        email: "alex.morgan@example.com",
+        phone: "+1 (555) 0123",
+        role: "Senior Frontend Engineer",
+        experience: "6"
+      }));
+      setSkills(["React", "TypeScript", "Node.js", "Tailwind CSS"]);
+      setIsUploading(false);
+      // In real app, we would upload to Supabase storage here
+    }, 1500);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     addCandidate({
@@ -56,7 +81,6 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, on
       role: formData.role,
       skills: skills,
       experience: parseInt(formData.experience) || 0,
-      status: 'Applied',
     });
     setFormData({ name: '', email: '', phone: '', role: '', experience: '' });
     setSkills([]);
@@ -67,54 +91,54 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, on
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Candidate">
       <form onSubmit={handleSubmit} className="space-y-5">
-        <Input 
-          label="Full Name" 
-          name="name" 
-          placeholder="e.g. Jane Smith" 
-          required 
-          value={formData.name} 
-          onChange={handleChange} 
+        <Input
+          label="Full Name"
+          name="name"
+          placeholder="e.g. Jane Smith"
+          required
+          value={formData.name}
+          onChange={handleChange}
         />
         <div className="grid grid-cols-2 gap-4">
-          <Input 
-            label="Email" 
-            name="email" 
-            type="email" 
-            placeholder="jane@example.com" 
-            required 
-            value={formData.email} 
-            onChange={handleChange} 
+          <Input
+            label="Email"
+            name="email"
+            type="email"
+            placeholder="jane@example.com"
+            required
+            value={formData.email}
+            onChange={handleChange}
           />
-          <Input 
-            label="Phone" 
-            name="phone" 
-            placeholder="+1 (555) ..." 
-            value={formData.phone} 
-            onChange={handleChange} 
+          <Input
+            label="Phone"
+            name="phone"
+            placeholder="+1 (555) ..."
+            value={formData.phone}
+            onChange={handleChange}
           />
         </div>
-        <Input 
-          label="Target Role" 
-          name="role" 
-          placeholder="e.g. Senior Frontend Dev" 
-          required 
-          value={formData.role} 
-          onChange={handleChange} 
+        <Input
+          label="Target Role"
+          name="role"
+          placeholder="e.g. Senior Frontend Dev"
+          required
+          value={formData.role}
+          onChange={handleChange}
         />
         <div className="grid grid-cols-2 gap-4">
-           <Input 
-            label="Experience (Years)" 
-            name="experience" 
-            type="number" 
-            placeholder="5" 
-            value={formData.experience} 
-            onChange={handleChange} 
+          <Input
+            label="Experience (Years)"
+            name="experience"
+            type="number"
+            placeholder="5"
+            value={formData.experience}
+            onChange={handleChange}
           />
-          
+
           {/* Tag Input for Skills */}
           <div className="w-full">
             <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Skills</label>
-            <div 
+            <div
               className="min-h-[46px] w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 flex flex-wrap gap-2 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all shadow-sm"
               onClick={() => document.getElementById('skill-input')?.focus()}
             >
@@ -139,12 +163,24 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, on
           </div>
         </div>
 
-        {/* Pseudo Upload Area */}
+        {/* Upload Area */}
         <div className="mt-2">
           <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wide">Resume</label>
-          <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 hover:border-emerald-400 hover:bg-emerald-50/50 transition-colors cursor-pointer group">
-            <UploadCloud size={32} className="mb-2 group-hover:text-emerald-500" />
-            <p className="text-sm font-medium group-hover:text-emerald-600">Drag resume PDF or click to browse</p>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".pdf,.doc,.docx"
+            onChange={handleFileChange}
+          />
+          <div
+            className={`border-2 border-dashed border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 hover:border-emerald-400 hover:bg-emerald-50/50 transition-colors cursor-pointer group ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <UploadCloud size={32} className={`mb-2 group-hover:text-emerald-500 ${isUploading ? 'animate-bounce' : ''}`} />
+            <p className="text-sm font-medium group-hover:text-emerald-600">
+              {isUploading ? 'Parsing Resume...' : 'Drag resume PDF or click to browse'}
+            </p>
           </div>
         </div>
 
