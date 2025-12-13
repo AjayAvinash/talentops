@@ -6,6 +6,8 @@ import { Dashboard } from './pages/Dashboard';
 import { Candidates } from './pages/Candidates';
 import { Jobs } from './pages/Jobs';
 import { JobKanban } from './pages/JobKanban';
+import { Settings } from './pages/Settings';
+import { TalentPools } from './pages/TalentPools';
 import { candidateService } from './services/candidateService';
 import { jobService } from './services/jobService';
 
@@ -32,6 +34,8 @@ const App: React.FC = () => {
             <Route path="/candidates" element={<Candidates />} />
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/jobs/:id" element={<JobKanban />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/pools" element={<TalentPools />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
