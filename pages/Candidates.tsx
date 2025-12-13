@@ -5,12 +5,12 @@ import { Button } from '../components/ui/Button';
 import { Badge, getStatusBadgeVariant } from '../components/ui/Badge';
 // import { Drawer } from '../components/ui/Drawer';
 import { Avatar } from '../components/ui/Avatar';
-import { AddCandidateModal } from '../components/candidates/AddCandidateModal';
+import { UploadCandidateModal } from '../components/candidates/UploadCandidateModal';
 import { CandidateDrawer } from '../components/candidates/CandidateDrawer';
 import {
   Search, Plus, Filter, MoreHorizontal, Download,
   MapPin, Mail, Phone, Linkedin, Calendar, CheckSquare,
-  Briefcase, GraduationCap, Globe, Edit2, Share2, Star, X, SlidersHorizontal
+  Briefcase, GraduationCap, Globe, Edit2, Share2, Star, X, SlidersHorizontal, UploadCloud
 } from 'lucide-react';
 import { Candidate } from '../types';
 
@@ -20,7 +20,7 @@ export const Candidates: React.FC = () => {
   const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>(allCandidates);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'timeline'>('profile');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [timelineActivities, setTimelineActivities] = useState<any[]>([]);
@@ -110,7 +110,7 @@ export const Candidates: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Candidates</h1>
             <p className="text-sm text-gray-500 mt-1">View and manage your talent pool.</p>
           </div>
-          <Button icon={<Plus size={18} />} onClick={() => setIsAddModalOpen(true)}>Add Candidate</Button>
+          <Button icon={<UploadCloud size={18} />} onClick={() => setIsUploadModalOpen(true)}>Upload Candidate</Button>
         </div>
 
         {/* Prominent Search Bar Area */}
@@ -263,7 +263,7 @@ export const Candidates: React.FC = () => {
         }}
       />
 
-      <AddCandidateModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
+      <UploadCandidateModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} />
     </div>
   );
 };

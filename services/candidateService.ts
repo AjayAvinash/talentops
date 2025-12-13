@@ -199,7 +199,7 @@ export const candidateService = {
                 const embedding = await generateEmbedding(embeddingText);
                 // Format as string for vector type update
                 const embeddingString = `[${embedding.join(',')}]`;
-                
+
                 const { error: updateError } = await supabase
                     .from('candidates')
                     .update({ embedding: embeddingString } as any)
@@ -210,6 +210,58 @@ export const candidateService = {
             } catch (err) {
                 console.error(`Failed to regenerate embedding for candidate ${candidate.id}:`, err);
             }
+        }
+    },
+
+    async uploadResume(file: File) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('resumes')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            console.error('Upload error:', uploadError);
+            throw uploadError;
+        }
+
+        const { data } = supabase.storage.from('resumes').getPublicUrl(filePath);
+        return data.publicUrl;
+    },
+
+    async parseResume(fileUrl: string) {
+        // In a real scenario, this calls the n8n webhook
+        const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
+
+        if (!N8N_WEBHOOK_URL) {
+            console.warn('VITE_N8N_WEBHOOK_URL is not set. Simulating parsing.');
+            return new Promise<{ name: string, email: string, skills: string[], role: string, experience: string }>((resolve) => {
+                setTimeout(() => {
+                    resolve({
+                        name: "Alex Morgan",
+                        email: "alex.morgan@example.com",
+                        role: "Senior Frontend Engineer",
+                        experience: "5",
+                        skills: ["React", "TypeScript", "Node.js"]
+                    });
+                }, 2000);
+            });
+        }
+
+        try {
+            const response = await fetch(N8N_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fileUrl })
+            });
+
+            if (!response.ok) throw new Error('Failed to parse resume via n8n');
+            return await response.json();
+        } catch (error) {
+            console.error('Parsing error:', error);
+            throw error;
         }
     }
 };

@@ -215,40 +215,101 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
 
                         {activeTab === 'timeline' && (
                             <div className="max-w-2xl">
-                                <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center justify-between mb-8">
                                     <h3 className="text-lg font-semibold text-gray-900">Activity & Notes</h3>
-                                    <Button size="sm" variant="secondary">Add Note</Button>
+                                    {/* <Button size="sm" variant="secondary">Add Note</Button> */}
                                 </div>
 
-                                <div className="relative pl-4 space-y-8 before:absolute before:left-[19px] before:top-2 before:bottom-4 before:w-px before:bg-gray-200">
+                                <div className="relative pl-6 space-y-10 before:absolute before:left-[19px] before:top-2 before:bottom-4 before:w-px before:bg-gray-200">
                                     {timelineActivities.length === 0 ? (
                                         <p className="text-gray-500 text-sm pl-8">No activity recorded yet.</p>
                                     ) : (
-                                        timelineActivities.map((activity) => (
-                                            <div key={activity.id} className="relative pl-8">
-                                                <div className={`absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white ${activity.type === 'rejection' ? 'bg-red-500' :
-                                                    activity.type === 'status_change' ? 'bg-emerald-500' :
-                                                        'bg-gray-300'
-                                                    }`}></div>
+                                        timelineActivities.map((activity) => {
+                                            // Extract rating if present (format: "Rating: X/5")
+                                            const ratingMatch = activity.description?.match(/Rating: (\d+)\/5/);
+                                            const rating = ratingMatch ? parseInt(ratingMatch[1]) : 0;
+                                            const cleanDescription = activity.description?.replace(/Rating: \d+\/5/, '').trim().replace(/Reason: /, '');
 
-                                                {activity.type === 'note' || activity.type === 'rejection' ? (
-                                                    <div className="bg-gray-50 border border-gray-300 p-4 rounded-lg rounded-tl-none">
-                                                        <div className="flex justify-between items-center mb-2">
-                                                            <span className="text-sm font-semibold text-gray-900">{activity.title}</span>
-                                                            <span className="text-xs text-gray-500">{new Date(activity.timestamp).toLocaleDateString()}</span>
+                                            // Determine Icon and Color
+                                            let icon = <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />;
+                                            let bgColor = 'bg-gray-100';
+                                            let borderColor = 'border-gray-200';
+
+                                            if (activity.type === 'rejection') {
+                                                icon = <X size={14} className="text-white" />;
+                                                bgColor = 'bg-red-500';
+                                                borderColor = 'border-red-200';
+                                            } else if (activity.type === 'stage_change' || activity.type === 'assignment') {
+                                                icon = <Share2 size={12} className="text-white" />; // Using Share2 as a proxy for 'move/assign'
+                                                bgColor = 'bg-emerald-500';
+                                                borderColor = 'border-emerald-200';
+                                            } else if (activity.type === 'rating') {
+                                                icon = <Star size={12} className="text-white" />;
+                                                bgColor = 'bg-amber-500';
+                                                borderColor = 'border-amber-200';
+                                            } else if (activity.type === 'note') {
+                                                icon = <Edit2 size={12} className="text-white" />;
+                                                bgColor = 'bg-blue-500';
+                                                borderColor = 'border-blue-200';
+                                            } else if (activity.type === 'upload') {
+                                                icon = <div className="w-2 h-2 rounded-full bg-gray-400" />;
+                                                bgColor = 'bg-gray-200';
+                                            }
+
+                                            // Handle special 'stage_change' that implies rejection based on title or description parsing if strictly typed not available
+                                            // But we trust 'type' mostly. 
+                                            // Note: Rejection logic in jobService sets type to 'stage_change' but title 'Application Rejected'.
+                                            if (activity.title === 'Application Rejected') {
+                                                icon = <X size={14} className="text-white" />;
+                                                bgColor = 'bg-red-500';
+                                                borderColor = 'border-red-200';
+                                            }
+
+
+                                            return (
+                                                <div key={activity.id} className="relative pl-10 group">
+                                                    {/* Timeline Dot/Icon */}
+                                                    <div className={`
+                                                        absolute left-0 top-0 w-10 h-10 rounded-full border-[3px] border-white shadow-sm flex items-center justify-center z-10
+                                                        ${bgColor}
+                                                    `}>
+                                                        {typeof icon === 'object' && 'type' in icon ? icon : <div className="w-2 h-2 bg-white rounded-full"></div>}
+                                                    </div>
+
+                                                    <div className={`
+                                                        rounded-xl border p-5 transition-all
+                                                        ${activity.title === 'Application Rejected' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-200 hover:border-emerald-200 hover:shadow-sm'}
+                                                    `}>
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div>
+                                                                <h4 className="text-sm font-bold text-gray-900">{activity.title}</h4>
+                                                                <span className="text-xs text-gray-500 font-medium">{new Date(activity.timestamp).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                                                            </div>
+                                                            {rating > 0 && (
+                                                                <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-full border border-amber-100">
+                                                                    {[...Array(5)].map((_, i) => (
+                                                                        <Star
+                                                                            key={i}
+                                                                            size={12}
+                                                                            className={i < rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}
+                                                                        />
+                                                                    ))}
+                                                                    <span className="text-xs font-bold text-amber-700 ml-1.5">{rating}.0</span>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <p className="text-sm text-gray-600">{activity.description}</p>
+
+                                                        {cleanDescription && (
+                                                            <div className="text-sm text-gray-600 leading-relaxed mt-2">
+                                                                {cleanDescription.split('. ').map((sentence, idx) => (
+                                                                    <p key={idx} className={idx > 0 ? "mt-1" : ""}>{sentence}.</p>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                ) : (
-                                                    <div>
-                                                        <p className="text-sm text-gray-900">{activity.title}</p>
-                                                        <p className="text-xs text-gray-500 mt-1">
-                                                            {new Date(activity.timestamp).toLocaleDateString()} • {activity.description}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))
+                                                </div>
+                                            );
+                                        })
                                     )}
                                 </div>
                             </div>
