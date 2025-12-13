@@ -62,7 +62,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  */
 export async function vectorSearchCandidates(
     query: string,
-    limit: number = 20
+    limit: number = 5
 ): Promise<Array<{ candidate: any; similarity: number }>> {
     try {
         // Generate embedding for the search query
@@ -99,7 +99,7 @@ export async function vectorSearchCandidates(
  */
 export async function vectorSearchJobs(
     query: string,
-    limit: number = 20
+    limit: number = 5
 ): Promise<Array<{ job: any; similarity: number }>> {
     try {
         // Generate embedding for the search query
