@@ -185,11 +185,11 @@ export const Candidates: React.FC = () => {
                   </td>
                   <td className="p-4">
                     <div className="flex gap-1.5 flex-wrap">
-                      {candidate.skills.slice(0, 3).map(skill => (
+                      {(candidate.skills ?? []).slice(0, 3).map(skill => (
                         <span key={skill} className="text-xs font-medium bg-gray-50 text-gray-700 px-2.5 py-1 rounded border border-gray-200">{skill}</span>
                       ))}
-                      {candidate.skills.length > 3 && (
-                        <span className="text-xs text-gray-500 pl-1 font-medium">+{candidate.skills.length - 3}</span>
+                      {(candidate.skills?.length ?? 0) > 3 && (
+                        <span className="text-xs text-gray-500 pl-1 font-medium">+{(candidate.skills?.length ?? 0) - 3}</span>
                       )}
                     </div>
                   </td>

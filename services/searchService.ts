@@ -10,11 +10,15 @@ export async function generateEmbedding(text: string): Promise<number[]> {
         throw new Error('Text cannot be empty');
     }
 
+    if (!SUPABASE_URL) {
+        throw new Error('Supabase URL is not configured');
+    }
+
+    // Ensure URL doesn't have double slashes
+    const baseUrl = SUPABASE_URL.endsWith('/') ? SUPABASE_URL.slice(0, -1) : SUPABASE_URL;
+    const embedUrl = `${baseUrl}/functions/v1/embed`;
+    
     try {
-        // Ensure URL doesn't have double slashes
-        const baseUrl = SUPABASE_URL?.endsWith('/') ? SUPABASE_URL.slice(0, -1) : SUPABASE_URL;
-        const embedUrl = `${baseUrl}/functions/v1/embed`;
-        
         const response = await fetch(embedUrl, {
             method: 'POST',
             headers: {
@@ -26,13 +30,24 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Embedding generation failed: ${response.status} ${errorText}`);
+            let errorMessage = `Embedding generation failed: ${response.status}`;
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.error || errorMessage;
+            } catch {
+                errorMessage = `${errorMessage} - ${errorText.substring(0, 200)}`;
+            }
+            throw new Error(errorMessage);
         }
 
         const data = await response.json();
         
         if (!data.embedding || !Array.isArray(data.embedding)) {
-            throw new Error('Invalid embedding response format');
+            throw new Error('Invalid embedding response format from edge function');
+        }
+
+        if (data.embedding.length !== 768) {
+            throw new Error(`Invalid embedding dimension: expected 768, got ${data.embedding.length}`);
         }
 
         return data.embedding;
