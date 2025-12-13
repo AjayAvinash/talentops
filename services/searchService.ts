@@ -75,7 +75,7 @@ export async function vectorSearchCandidates(
         // Using cosine distance (<=>) operator, results sorted by similarity
         const { data, error } = await supabase.rpc('match_candidates', {
             query_embedding: embeddingString,
-            match_threshold: 0.5, // Minimum similarity threshold
+            match_threshold: 0.3, // Minimum similarity threshold
             match_count: limit,
         });
 
@@ -99,7 +99,7 @@ export async function vectorSearchCandidates(
  */
 export async function vectorSearchJobs(
     query: string,
-    limit: number = 20
+    limit: number = 5
 ): Promise<Array<{ job: any; similarity: number }>> {
     try {
         // Generate embedding for the search query
