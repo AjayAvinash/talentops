@@ -7,7 +7,10 @@ export const jobService = {
     async getAll() {
         const { data, error } = await supabase
             .from('jobs')
-            .select('*')
+            .select(`
+                *,
+                candidates:job_candidates(count)
+            `)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -45,6 +48,9 @@ export const jobService = {
             department: job.department,
             openings: job.openings,
             status: job.status,
+            location: job.location,
+            roles_and_responsibilities: job.responsibilities,
+            required_skills: job.required_skills || [],
         };
 
         if (embedding) {
@@ -155,6 +161,12 @@ export const jobService = {
 
         if (error) throw error;
 
+        // Update global candidate status
+        await supabase
+            .from('candidates')
+            .update({ status })
+            .eq('id', candidateId);
+
         // Log to timeline
         if (jobTitle) {
             const { timelineService } = await import('./timelineService');
@@ -181,6 +193,12 @@ export const jobService = {
             .eq('candidate_id', candidateId);
 
         if (error) throw error;
+
+        // Update global candidate status
+        await supabase
+            .from('candidates')
+            .update({ status: 'Rejected' })
+            .eq('id', candidateId);
 
         // Log to timeline
         const { timelineService } = await import('./timelineService');
@@ -221,6 +239,24 @@ export const jobService = {
             if (textError) throw textError;
             return data.map(mapToJob);
         }
+    },
+
+    async delete(id: string) {
+        const { error } = await supabase
+            .from('jobs')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+    },
+
+    async updateStatus(id: string, status: 'Open' | 'Closed' | 'On Hold') {
+        const { error } = await supabase
+            .from('jobs')
+            .update({ status })
+            .eq('id', id);
+
+        if (error) throw error;
     }
 };
 
@@ -230,8 +266,11 @@ function mapToJob(row: any): Job {
         title: row.title,
         department: row.department,
         openings: row.openings,
-        candidatesCount: 0, // Need aggregation query for this
+        candidatesCount: row.candidates ? row.candidates[0]?.count : 0, // Handle count from join
         status: row.status,
+        location: row.location,
+        responsibilities: row.roles_and_responsibilities,
+        required_skills: row.required_skills || [],
         createdAt: row.created_at,
         stages: { // Placeholder, needs real data if we use this field
             'Applied': [],

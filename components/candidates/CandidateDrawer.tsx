@@ -54,7 +54,7 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
         <Drawer isOpen={isOpen} onClose={onClose} size="2xl">
             <div className="flex flex-col h-full bg-white">
                 {/* Drawer Header */}
-                <div className="px-8 pt-8 pb-0 border-b border-gray-100 bg-white">
+                <div className="px-8 pt-8 pb-0 border-b border-gray-300 bg-white">
                     <div className="flex items-start justify-between">
                         <div className="flex gap-5">
                             <Avatar name={candidate.name} size="xl" className="shadow-sm" />
@@ -110,8 +110,8 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
                                     <section>
                                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Credentials</h3>
 
-                                        <div className="bg-white rounded-lg border border-gray-100 p-0">
-                                            <div className="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+                                        <div className="bg-white rounded-lg border border-gray-300 p-0">
+                                            <div className="grid grid-cols-3 divide-x divide-gray-300 border-b border-gray-300">
                                                 <div className="p-4">
                                                     <span className="block text-xs text-gray-500 mb-1">Experience</span>
                                                     <span className="block text-sm font-medium text-gray-900">{candidate.experience} Years</span>
@@ -133,7 +133,7 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
                                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Skills</h3>
                                         <div className="flex flex-wrap gap-2">
                                             {candidate.skills.map(skill => (
-                                                <span key={skill} className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm hover:border-emerald-300 transition-colors">
+                                                <span key={skill} className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm hover:border-emerald-300 transition-colors">
                                                     {skill}
                                                 </span>
                                             ))}
@@ -161,7 +161,7 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
 
                                 {/* Right Column (Contact & Meta) */}
                                 <div className="space-y-6">
-                                    <section className="bg-gray-50/50 rounded-xl border border-gray-200 p-6">
+                                    <section className="bg-gray-50/50 rounded-xl border border-gray-300 p-6">
                                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Contact Info</h3>
 
                                         <div className="space-y-4">
@@ -188,9 +188,8 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
                                         </div>
                                     </section>
 
-                                    <section className="bg-white rounded-xl border border-gray-200 p-6">
-                                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Files</h3>
-                                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors cursor-pointer group">
+                                    <section className="bg-white rounded-xl border border-gray-300 p-6">
+                                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors cursor-pointer group">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 bg-red-100 text-red-600 rounded flex items-center justify-center text-xs font-bold">PDF</div>
                                                 <div>
@@ -228,12 +227,12 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
                                         timelineActivities.map((activity) => (
                                             <div key={activity.id} className="relative pl-8">
                                                 <div className={`absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white ${activity.type === 'rejection' ? 'bg-red-500' :
-                                                        activity.type === 'status_change' ? 'bg-emerald-500' :
-                                                            'bg-gray-300'
+                                                    activity.type === 'status_change' ? 'bg-emerald-500' :
+                                                        'bg-gray-300'
                                                     }`}></div>
 
                                                 {activity.type === 'note' || activity.type === 'rejection' ? (
-                                                    <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg rounded-tl-none">
+                                                    <div className="bg-gray-50 border border-gray-300 p-4 rounded-lg rounded-tl-none">
                                                         <div className="flex justify-between items-center mb-2">
                                                             <span className="text-sm font-semibold text-gray-900">{activity.title}</span>
                                                             <span className="text-xs text-gray-500">{new Date(activity.timestamp).toLocaleDateString()}</span>

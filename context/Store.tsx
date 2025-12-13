@@ -8,10 +8,12 @@ interface AppContextType {
   candidates: Candidate[];
   jobs: Job[];
   activities: Activity[];
-  addCandidate: (candidate: Omit<Candidate, 'id' | 'addedAt' | 'fitScore' | 'status'>) => Promise<Candidate | undefined>;
+  addCandidate: (candidate: Omit<Candidate, 'id' | 'addedAt' | 'fitScore'>) => Promise<Candidate | undefined>;
   updateCandidateStatus: (id: string, status: Candidate['status']) => void;
   deleteCandidate: (id: string) => void;
   addJob: (job: Omit<Job, 'id' | 'createdAt' | 'candidatesCount' | 'stages'>) => void;
+  deleteJob: (id: string) => void;
+  updateJobStatus: (id: string, status: Job['status']) => void;
   loading: boolean;
 }
 
@@ -44,7 +46,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetchData();
   }, []);
 
-  const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'addedAt' | 'fitScore' | 'status'>) => {
+  const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'addedAt' | 'fitScore'>) => {
     try {
       const created = await candidateService.create(newCandidateData);
       setCandidates((prev) => [created, ...prev]);
@@ -94,6 +96,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const deleteJob = async (id: string) => {
+    try {
+      await jobService.delete(id);
+      setJobs(prev => prev.filter(j => j.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Error deleting job');
+    }
+  };
+
+  const updateJobStatus = async (id: string, status: Job['status']) => {
+    try {
+      await jobService.updateStatus(id, status);
+      setJobs(prev => prev.map(j => j.id === id ? { ...j, status } : j));
+    } catch (e) {
+      console.error(e);
+      alert('Error updating job status');
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -104,6 +126,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateCandidateStatus,
         deleteCandidate,
         addJob,
+        deleteJob,
+        updateJobStatus,
         loading,
       }}
     >

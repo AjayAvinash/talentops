@@ -2,7 +2,7 @@
 create extension if not exists vector;
 
 -- Enums
-create type candidate_status as enum ('Screening', 'Technical', 'Technical', 'Assignment ', 'Final HR', 'Offer');
+create type candidate_status as enum ('Screening', 'Technical', 'Assignment ', 'Final HR', 'Offer','New','Rejected', 'Archived');
 create type job_status as enum ('Open', 'Closed', 'On Hold');
 create type activity_type as enum ('upload', 'assignment', 'stage_change', 'rating', 'note');
 
@@ -20,6 +20,7 @@ create table candidates (
   resume_url text,
   resume_text text, -- Extracted text for search
   embedding vector(768), -- For semantic search (matches Hugging Face model output)
+  status candidate_status default 'New',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -30,6 +31,8 @@ create table jobs (
   title text not null,
   department text not null,
   openings integer default 1,
+  location text,
+  responsibilities text,
   status job_status default 'Open',
   skills_required jsonb default '[]'::jsonb,
   description text,

@@ -123,11 +123,11 @@ export const Candidates: React.FC = () => {
             placeholder="Search by name, role, skills (e.g. 'experienced React developer with TypeScript')..."
             className="
                 block w-full pl-12 pr-4 py-3.5 
-                bg-white border border-gray-200 rounded-xl 
+                bg-white border border-gray-300 rounded-xl 
                 text-gray-900 placeholder-gray-400 text-base font-medium
                 shadow-sm transition-all duration-200
                 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500
-                hover:border-gray-300 hover:shadow-md
+                hover:border-gray-400 hover:shadow-md
               "
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -147,11 +147,11 @@ export const Candidates: React.FC = () => {
       </div>
 
       {/* Table */}
-      <Card padding="none" className="flex-1 overflow-hidden border-gray-200 shadow-sm mt-2">
+      <Card padding="none" className="flex-1 overflow-hidden border-2 border-gray-300 shadow-sm mt-2">
         <div className="overflow-x-auto h-full">
           <table className="w-full text-left border-collapse">
-            <thead className="sticky top-0 bg-white z-10 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-              <tr className="border-b border-gray-100 text-xs uppercase text-gray-500 font-semibold tracking-wide">
+            <thead className="sticky top-0 bg-white z-10 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border-b border-gray-300">
+              <tr className="border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold tracking-wide">
                 <th className="p-4 w-12 pl-6">
                   <input
                     type="checkbox"
@@ -171,7 +171,7 @@ export const Candidates: React.FC = () => {
                 <th className="p-4 w-10"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-200">
               {filteredCandidates.map(candidate => (
                 <tr
                   key={candidate.id}

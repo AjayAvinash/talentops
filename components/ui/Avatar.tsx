@@ -8,21 +8,21 @@ interface AvatarProps {
 
 export const Avatar: React.FC<AvatarProps> = ({ name, size = 'md', className = '' }) => {
   const initial = name ? name.charAt(0).toUpperCase() : '?';
-  
+
   // Deterministic color based on name length to keep it consistent across renders
   const colors = [
-    'bg-blue-100 text-blue-700',
-    'bg-emerald-100 text-emerald-700',
-    'bg-violet-100 text-violet-700',
-    'bg-amber-100 text-amber-700',
-    'bg-rose-100 text-rose-700',
-    'bg-indigo-100 text-indigo-700',
-    'bg-teal-100 text-teal-700',
-    'bg-orange-100 text-orange-700',
-    'bg-cyan-100 text-cyan-700',
-    'bg-fuchsia-100 text-fuchsia-700'
+    'bg-blue-600 text-white',
+    'bg-emerald-600 text-white',
+    'bg-violet-600 text-white',
+    'bg-amber-500 text-white',
+    'bg-rose-600 text-white',
+    'bg-indigo-600 text-white',
+    'bg-teal-600 text-white',
+    'bg-orange-500 text-white',
+    'bg-cyan-600 text-white',
+    'bg-fuchsia-600 text-white'
   ];
-  
+
   const colorIndex = name ? name.length % colors.length : 0;
   const colorClass = colors[colorIndex];
 

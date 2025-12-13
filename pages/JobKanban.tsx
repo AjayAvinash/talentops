@@ -181,7 +181,7 @@ export const JobKanban: React.FC = () => {
                                  key={c.id}
                                  draggable
                                  onDragStart={(e) => handleDragStart(e, c.id)}
-                                 className="bg-white p-4 rounded-xl shadow-sm border border-gray-200/60 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-gray-300 transition-all group relative"
+                                 className="bg-white p-4 rounded-xl shadow-sm border border-gray-300 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-gray-400 transition-all group relative"
                               >
                                  {/* Drag Handle */}
                                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">

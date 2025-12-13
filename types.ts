@@ -22,6 +22,9 @@ export interface Job {
   openings: number;
   candidatesCount: number;
   status: 'Open' | 'Closed' | 'On Hold';
+  location?: string;
+  responsibilities?: string;
+  required_skills?: string[];
   createdAt: string;
   stages: Record<Status, string[]>; // candidate IDs per stage
 }
