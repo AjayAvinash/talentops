@@ -30,10 +30,12 @@ export const jobService = {
 
     async create(job: Omit<Job, 'id' | 'createdAt' | 'candidatesCount' | 'stages'>) {
         // Generate embedding for semantic search
-        // Combine title and department for embedding (description and skills_required are in DB but not in Job type)
+        // Combine title and department for embedding
         const embeddingText = [
             job.title,
             job.department || '',
+            job.description || '',
+            job.required_skills?.join(', ') || ''
         ].filter(Boolean).join(' ');
 
         let embedding: number[] | null = null;
@@ -50,7 +52,8 @@ export const jobService = {
             status: job.status,
             location: job.location,
             roles_and_responsibilities: job.responsibilities,
-            required_skills: job.required_skills || [],
+            skills_required: job.required_skills || [], // Map to JSONB column
+            description: job.description,
         };
 
         if (embedding) {
@@ -64,38 +67,11 @@ export const jobService = {
             .single();
 
         if (error) throw error;
-
-        // After creation, update embedding if we have description/skills from DB
-        const { data: fullJob } = await supabase
-            .from('jobs')
-            .select('description, skills_required')
-            .eq('id', data.id)
-            .single();
-
-        if (fullJob && (fullJob.description || fullJob.skills_required)) {
-            const fullEmbeddingText = [
-                job.title,
-                job.department || '',
-                fullJob.description || '',
-                Array.isArray(fullJob.skills_required) ? fullJob.skills_required.join(', ') : '',
-            ].filter(Boolean).join(' ');
-
-            try {
-                const fullEmbedding = await generateEmbedding(fullEmbeddingText);
-                await supabase
-                    .from('jobs')
-                    .update({ embedding: `[${fullEmbedding.join(',')}]` })
-                    .eq('id', data.id);
-            } catch (error) {
-                console.warn('Failed to update job embedding with full text:', error);
-            }
-        }
-
         return mapToJob(data);
     },
 
     // Get candidates for a specific job, organized for the board
-    async assignCandidate(jobId: string, candidateId: string, status: Status = 'Applied') {
+    async assignCandidate(jobId: string, candidateId: string, status: Status = 'New') {
         const { error } = await supabase
             .from('job_candidates')
             .insert([{
@@ -311,16 +287,18 @@ function mapToJob(row: any): Job {
         status: row.status,
         location: row.location,
         responsibilities: row.roles_and_responsibilities,
-        required_skills: row.required_skills || [],
+        required_skills: row.skills_required || [], // Map from JSONB column
+        description: row.description,
         createdAt: row.created_at,
         stages: { // Placeholder, needs real data if we use this field
-            'Applied': [],
+            'New': [],
             'Screening': [],
             'Technical': [],
-            'Manager': [],
+            'Assignment': [],
+            'Final HR': [],
             'Offer': [],
-            'Hired': [],
-            'Rejected': []
+            'Rejected': [],
+            'Archived': []
         }
     };
 }
@@ -346,7 +324,7 @@ function mapCandidateFromJoin(row: any): Candidate {
         role: row.role,
         skills: row.skills,
         experience: row.experience,
-        status: 'Applied', // This context is tricky in join, but handled by wrapper
+        status: 'New', // This context is tricky in join, but handled by wrapper
         fitScore: 0,
         addedAt: row.created_at,
         linkedIn: row.linkedin,

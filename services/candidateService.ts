@@ -42,6 +42,7 @@ export const candidateService = {
             candidate.role || '',
             candidate.skills?.join(', ') || '',
             candidate.location || '',
+            candidate.resumeText || '',
         ].filter(Boolean).join(' ');
 
         let embedding: number[] | null = null;
@@ -61,6 +62,8 @@ export const candidateService = {
             experience: candidate.experience,
             linkedin: candidate.linkedIn,
             location: candidate.location,
+            resume_url: candidate.resumeUrl,
+            resume_text: candidate.resumeText,
             status: candidate.status || 'New',
         };
 
@@ -97,10 +100,12 @@ export const candidateService = {
         if (updates.experience) dbUpdates.experience = updates.experience;
         if (updates.linkedIn) dbUpdates.linkedin = updates.linkedIn;
         if (updates.location) dbUpdates.location = updates.location;
+        if (updates.resumeUrl) dbUpdates.resume_url = updates.resumeUrl;
+        if (updates.resumeText) dbUpdates.resume_text = updates.resumeText;
         if (updates.status) dbUpdates.status = updates.status;
 
         // Regenerate embedding if any searchable fields changed
-        const searchableFieldsChanged = updates.name || updates.role || updates.skills || updates.location;
+        const searchableFieldsChanged = updates.name || updates.role || updates.skills || updates.location || updates.resumeText;
         if (searchableFieldsChanged) {
             // Fetch current candidate to get all fields for embedding
             const { data: current } = await supabase
@@ -116,6 +121,7 @@ export const candidateService = {
                     updatedCandidate.role || '',
                     Array.isArray(updatedCandidate.skills) ? updatedCandidate.skills.join(', ') : '',
                     updatedCandidate.location || '',
+                    updatedCandidate.resume_text || '',
                 ].filter(Boolean).join(' ');
 
                 try {
@@ -192,7 +198,8 @@ export const candidateService = {
                 candidate.role || '',
                 Array.isArray(candidate.skills) ? candidate.skills.join(', ') : '',
                 candidate.location || '',
-                candidate.experience || ''
+                candidate.experience || '',
+                candidate.resume_text || ''
             ].filter(Boolean).join(' ');
 
             try {
@@ -276,14 +283,17 @@ function mapToCandidate(row: any): Candidate {
         role: row.role,
         skills: row.skills, // JSONB comes back as array
         experience: row.experience,
-        status: row.status || 'Applied',
+        status: row.status || 'New',
         // But the UI type Candidate has status. We might need to fetch this contextually.
-        // For the main table list, we might default to 'Applied' or fetch latest status?
+        // For the main table list, we might default to 'New' or fetch latest status?
         // The PRD implies Candidates in the pool vs Candidates in a Job.
-        // Let's default to 'Applied' or generic status for now.
+        // Let's default to 'New' or generic status for now.
         fitScore: 0, // Calculated dynamically in context of a job or search
         addedAt: row.created_at,
+        updatedAt: row.updated_at,
         linkedIn: row.linkedin,
-        location: row.location
+        location: row.location,
+        resumeUrl: row.resume_url,
+        resumeText: row.resume_text,
     };
 }

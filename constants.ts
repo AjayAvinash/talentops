@@ -23,7 +23,7 @@ export const MOCK_CANDIDATES: Candidate[] = [
     role: 'Product Designer',
     skills: ['Figma', 'UI/UX', 'Prototyping'],
     experience: 4,
-    status: 'Applied',
+    status: 'New',
     fitScore: 85,
     addedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
     location: 'Remote',
@@ -61,7 +61,7 @@ export const MOCK_CANDIDATES: Candidate[] = [
     role: 'Frontend Developer',
     skills: ['Vue.js', 'JavaScript', 'CSS'],
     experience: 3,
-    status: 'Hired',
+    status: 'Offer',
     fitScore: 95,
     addedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
   }
@@ -77,13 +77,14 @@ export const MOCK_JOBS: Job[] = [
     status: 'Open',
     createdAt: '2023-10-01T10:00:00Z',
     stages: {
-      Applied: ['c2'],
+      New: ['c2'],
       Screening: ['c1'],
       Technical: ['c3'],
-      Manager: [],
+      Assignment: [],
+      'Final HR': [],
       Offer: [],
-      Hired: [],
       Rejected: ['c4'],
+      Archived: []
     },
   },
   {
@@ -95,13 +96,14 @@ export const MOCK_JOBS: Job[] = [
     status: 'Open',
     createdAt: '2023-10-15T14:30:00Z',
     stages: {
-      Applied: [],
+      New: [],
       Screening: [],
       Technical: [],
-      Manager: [],
+      Assignment: [],
+      'Final HR': [],
       Offer: [],
-      Hired: [],
       Rejected: [],
+      Archived: []
     },
   },
   {
@@ -113,13 +115,14 @@ export const MOCK_JOBS: Job[] = [
     status: 'Closed',
     createdAt: '2023-09-20T09:00:00Z',
     stages: {
-      Applied: [],
+      New: [],
       Screening: [],
       Technical: [],
-      Manager: [],
-      Offer: [],
-      Hired: ['c5'],
+      Assignment: [],
+      'Final HR': [],
+      Offer: ['c5'],
       Rejected: [],
+      Archived: []
     },
   },
 ];

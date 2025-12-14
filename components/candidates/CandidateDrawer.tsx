@@ -76,8 +76,6 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"><Share2 size={18} /></button>
-                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"><Edit2 size={18} /></button>
                             <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors" onClick={onClose}><X size={20} /></button>
                         </div>
                     </div>
@@ -94,7 +92,7 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
                             className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'timeline' ? 'border-emerald-600 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                             onClick={() => setActiveTab('timeline')}
                         >
-                            Timeline & Notes
+                            Timeline
                         </button>
                     </div>
                 </div>

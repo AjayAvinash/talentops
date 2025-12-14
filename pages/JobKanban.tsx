@@ -63,7 +63,7 @@ export const JobKanban: React.FC = () => {
 
    if (!job) return <div>Job not found</div>;
 
-   const stages: Status[] = ['Applied', 'Screening', 'Technical', 'Manager', 'Offer', 'Hired', 'Rejected'];
+   const stages: Status[] = ['New', 'Screening', 'Technical', 'Assignment', 'Final HR', 'Offer', 'Rejected', 'Archived'];
 
    const handleDrop = async (e: React.DragEvent, newStatus: Status) => {
       e.preventDefault();
@@ -123,7 +123,7 @@ export const JobKanban: React.FC = () => {
             <div className="flex gap-4 h-full min-w-max px-1">
                {stages.map(stage => {
                   const stageCandidates = boardCandidates.filter(c => c.status === stage);
-                  const isTerminal = stage === 'Hired' || stage === 'Rejected';
+                  const isTerminal = stage === 'Archived' || stage === 'Rejected';
 
                   return (
                      <div

@@ -1,4 +1,6 @@
-export type Status = 'Applied' | 'Screening' | 'Technical' | 'Manager' | 'Offer' | 'Hired' | 'Rejected';
+export type Status = 'New' | 'Screening' | 'Technical' | 'Assignment' | 'Final HR' | 'Offer' | 'Rejected' | 'Archived';
+
+export type JobStatus = 'Open' | 'Closed' | 'On Hold';
 
 export interface Candidate {
   id: string;
@@ -13,6 +15,9 @@ export interface Candidate {
   addedAt: string;
   linkedIn?: string;
   location?: string;
+  resumeUrl?: string; // New field from DB
+  resumeText?: string; // New field from DB
+  updatedAt?: string; // New field from DB
 }
 
 export interface Job {
@@ -21,12 +26,27 @@ export interface Job {
   department: string;
   openings: number;
   candidatesCount: number;
-  status: 'Open' | 'Closed' | 'On Hold';
+  status: JobStatus;
   location?: string;
-  responsibilities?: string;
-  required_skills?: string[];
+  responsibilities?: string; // Mapped from roles_and_responsibilities
+  required_skills?: string[]; // Mapped from skills_required (jsonb)
+  description?: string; // New field from DB
   createdAt: string;
   stages: Record<Status, string[]>; // candidate IDs per stage
+}
+
+export interface JobCandidate {
+  id: string;
+  jobId: string;
+  candidateId: string;
+  status: Status;
+  stageOrder: number;
+  fitScore?: number;
+  rating?: number;
+  rejectedReason?: string;
+  feedback?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Activity {
@@ -35,6 +55,8 @@ export interface Activity {
   title: string;
   description: string;
   timestamp: string;
+  candidateId?: string;
+  jobId?: string;
 }
 
 export interface DashboardMetrics {
