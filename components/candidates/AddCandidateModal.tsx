@@ -87,7 +87,7 @@ export const AddCandidateModal: React.FC<AddCandidateModalProps> = ({ isOpen, on
       role: formData.role,
       skills: skills,
       experience: parseInt(formData.experience) || 0,
-    });
+    }, 'manual');
 
     if (result && onSuccess) {
       await onSuccess(result.id);

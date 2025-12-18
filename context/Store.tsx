@@ -8,7 +8,7 @@ interface AppContextType {
   candidates: Candidate[];
   jobs: Job[];
   activities: Activity[];
-  addCandidate: (candidate: Omit<Candidate, 'id' | 'addedAt' | 'fitScore'>) => Promise<Candidate | undefined>;
+  addCandidate: (candidate: Omit<Candidate, 'id' | 'addedAt' | 'fitScore'>, source?: 'manual' | 'upload') => Promise<Candidate | undefined>;
   updateCandidateStatus: (id: string, status: Candidate['status']) => void;
   deleteCandidate: (id: string) => void;
   addJob: (job: Omit<Job, 'id' | 'createdAt' | 'candidatesCount' | 'stages'>) => void;
@@ -46,18 +46,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetchData();
   }, []);
 
-  const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'addedAt' | 'fitScore'>) => {
+  const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'addedAt' | 'fitScore'>, source: 'manual' | 'upload' = 'manual') => {
     try {
+      // Check if candidate exists locally first (by email or phone if possible, but upsert returns the final object)
       const created = await candidateService.create(newCandidateData);
-      setCandidates((prev) => [created, ...prev]);
 
-      // Add timeline event
-      await timelineService.create({
-        candidateId: created.id,
-        type: 'upload',
-        title: 'New Candidate',
-        description: `${created.name} was added manually`
+      setCandidates((prev) => {
+        const index = prev.findIndex(c => c.id === created.id);
+        if (index !== -1) {
+          // Update existing
+          const updated = [...prev];
+          updated[index] = created;
+          return updated;
+        }
+        // Add new
+        return [created, ...prev];
       });
+
+      // Add timeline event only if it's a "New" addition (or if we want to track updates too)
+      // For now, let's fix the "double event" and "manual" vs "upload" distinction.
+      // If the candidate was just created (id was not in prev), add "New Candidate" event.
+      // However, the user says they get it twice. If N8N or something else adds one, we might not need this.
+      // But let's at least make it accurate.
+
+      const isNew = !candidates.some(c => c.id === created.id);
+      if (isNew) {
+        await timelineService.create({
+          candidateId: created.id,
+          type: source === 'upload' ? 'upload' : 'manual',
+          title: 'New Candidate',
+          description: `${created.name} was added ${source === 'upload' ? 'via resume upload' : 'manually'}`
+        });
+      }
+
       return created;
     } catch (e) {
       console.error(e);

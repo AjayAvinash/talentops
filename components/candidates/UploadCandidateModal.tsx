@@ -38,7 +38,7 @@ export const UploadCandidateModal: React.FC<UploadCandidateModalProps> = ({ isOp
                 role: parsedData.role || 'New Applicant',
                 skills: parsedData.skills || [],
                 experience: parseInt(parsedData.experience) || 0,
-            });
+            }, 'upload');
 
             // Reset and close
             setStep('upload');
