@@ -73,7 +73,9 @@ export const candidateService = {
 
         const { data, error } = await supabase
             .from('candidates')
-            .insert([insertData])
+            .upsert([insertData], {
+                onConflict: 'email,phone'
+            })
             .select()
             .single();
 
