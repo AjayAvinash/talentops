@@ -347,7 +347,7 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
                 onConfirm={handleDelete}
                 title="Remove Candidate"
                 message={`Are you sure you want to remove ${candidate.name}? This action cannot be undone.`}
-                confirmText="Remove Candidate"
+                confirmText="Remove"
                 variant="danger"
                 isLoading={isDeleting}
             />
