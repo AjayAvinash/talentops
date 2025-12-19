@@ -218,7 +218,7 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
                                     {/* <Button size="sm" variant="secondary">Add Note</Button> */}
                                 </div>
 
-                                <div className="relative pl-6 space-y-10 before:absolute before:left-[19px] before:top-2 before:bottom-4 before:w-px before:bg-gray-200">
+                                <div className="relative space-y-10 before:absolute before:left-[19px] before:top-2 before:bottom-4 before:w-px before:bg-gray-200">
                                     {timelineActivities.length === 0 ? (
                                         <p className="text-gray-500 text-sm pl-8">No activity recorded yet.</p>
                                     ) : (
@@ -265,7 +265,7 @@ export const CandidateDrawer: React.FC<CandidateDrawerProps> = ({
 
 
                                             return (
-                                                <div key={activity.id} className="relative pl-10 group">
+                                                <div key={activity.id} className="relative pl-12 group">
                                                     {/* Timeline Dot/Icon */}
                                                     <div className={`
                                                         absolute left-0 top-0 w-10 h-10 rounded-full border-[3px] border-white shadow-sm flex items-center justify-center z-10
