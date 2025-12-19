@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
 import { UploadCloud, AlertCircle } from 'lucide-react';
 import { useApp } from '../../context/Store';
 import { candidateService } from '../../services/candidateService';
+import { useToast } from '../../context/ToastContext';
 
 interface UploadCandidateModalProps {
     isOpen: boolean;
@@ -12,7 +12,7 @@ interface UploadCandidateModalProps {
 
 export const UploadCandidateModal: React.FC<UploadCandidateModalProps> = ({ isOpen, onClose }) => {
     const { addCandidate } = useApp();
-    const [step, setStep] = useState<'upload' | 'parsing'>('upload');
+    const { addToast, updateToast } = useToast();
     const [isDragOver, setIsDragOver] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -21,7 +21,10 @@ export const UploadCandidateModal: React.FC<UploadCandidateModalProps> = ({ isOp
         if (!selectedFile) return;
 
         setError(null);
-        setStep('parsing');
+        const toastId = addToast(`Processing ${selectedFile.name}...`, 'loading');
+
+        // Close modal immediately
+        onClose();
 
         try {
             // 1. Upload to Supabase Storage
@@ -40,14 +43,17 @@ export const UploadCandidateModal: React.FC<UploadCandidateModalProps> = ({ isOp
                 experience: parseInt(parsedData.experience) || 0,
             }, 'upload');
 
-            // Reset and close
-            setStep('upload');
-            onClose();
+            updateToast(toastId, {
+                message: `Successfully processed ${selectedFile.name}`,
+                type: 'success'
+            });
 
         } catch (err) {
             console.error(err);
-            setError('Failed to process file. Please ensure it is a valid resume and try again.');
-            setStep('upload');
+            updateToast(toastId, {
+                message: `Failed to process ${selectedFile.name}. Please try again.`,
+                type: 'error'
+            });
         }
     };
 
@@ -70,61 +76,46 @@ export const UploadCandidateModal: React.FC<UploadCandidateModalProps> = ({ isOp
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Upload Candidate">
+            <div className="space-y-4">
+                <p className="text-sm text-gray-500">Upload a resume (PDF) or Excel file to automatically add candidate details.</p>
 
-            {step === 'upload' && (
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-500">Upload a resume (PDF) or Excel file to automatically add candidate details.</p>
+                <div
+                    className={`
+                        border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all
+                        ${isDragOver ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-emerald-400 hover:bg-gray-50'}
+                        ${error ? 'border-red-300 bg-red-50' : ''}
+                    `}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept=".pdf,.xlsx,.xls,.doc,.docx"
+                        onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+                    />
 
-                    <div
-                        className={`
-                            border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all
-                            ${isDragOver ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-emerald-400 hover:bg-gray-50'}
-                            ${error ? 'border-red-300 bg-red-50' : ''}
-                        `}
-                        onDrop={handleDrop}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept=".pdf,.xlsx,.xls,.doc,.docx"
-                            onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
-                        />
-
-                        {error ? (
-                            <>
-                                <AlertCircle size={48} className="text-red-400 mb-4" />
-                                <p className="text-red-600 font-medium">{error}</p>
-                                <p className="text-sm text-gray-400 mt-2">Click to try again</p>
-                            </>
-                        ) : (
-                            <>
-                                <div className="bg-emerald-100 p-4 rounded-full mb-4">
-                                    <UploadCloud size={32} className="text-emerald-600" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-gray-900">Click to upload or drag and drop</h3>
-                                <p className="text-sm text-gray-500 mt-1">PDF, Excel, or Word documents</p>
-                            </>
-                        )}
-                    </div>
+                    {error ? (
+                        <>
+                            <AlertCircle size={48} className="text-red-400 mb-4" />
+                            <p className="text-red-600 font-medium">{error}</p>
+                            <p className="text-sm text-gray-400 mt-2">Click to try again</p>
+                        </>
+                    ) : (
+                        <>
+                            <div className="bg-emerald-100 p-4 rounded-full mb-4">
+                                <UploadCloud size={32} className="text-emerald-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900">Click to upload or drag and drop</h3>
+                            <p className="text-sm text-gray-500 mt-1">PDF, Excel, or Word documents</p>
+                        </>
+                    )}
                 </div>
-            )}
-
-            {step === 'parsing' && (
-                <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                    <div className="relative">
-                        <div className="w-16 h-16 border-4 border-gray-100 rounded-full"></div>
-                        <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900 text-center">Processing Candidate...</h3>
-                        <p className="text-sm text-gray-500 text-center mt-1">Extracting details and adding to system.</p>
-                    </div>
-                </div>
-            )}
+            </div>
         </Modal>
     );
 };
+

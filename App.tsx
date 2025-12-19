@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/Store';
+import { ToastProvider } from './context/ToastContext';
+import { ToastContainer } from './components/ui/Toast';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Candidates } from './pages/Candidates';
@@ -27,20 +29,24 @@ const App: React.FC = () => {
   }, []);
   return (
     <AppProvider>
-      <HashRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/candidates" element={<Candidates />} />
-            <Route path="/jobs" element={<Jobs />} />
-            <Route path="/jobs/:id" element={<JobKanban />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/pools" element={<TalentPools />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Layout>
-      </HashRouter>
+      <ToastProvider>
+        <HashRouter>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/candidates" element={<Candidates />} />
+              <Route path="/jobs" element={<Jobs />} />
+              <Route path="/jobs/:id" element={<JobKanban />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/pools" element={<TalentPools />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Layout>
+        </HashRouter>
+        <ToastContainer />
+      </ToastProvider>
     </AppProvider>
+
   );
 };
 
