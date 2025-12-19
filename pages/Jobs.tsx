@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { Plus, MoreHorizontal, Users, Search, Eye, Trash2, XCircle, CheckCircle } from 'lucide-react';
 import { CreateJobDrawer } from '../components/jobs/CreateJobDrawer';
 import { JobDetailsModal } from '../components/jobs/JobDetailsModal';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Job } from '../types';
 
 export const Jobs: React.FC = () => {
@@ -20,6 +21,11 @@ export const Jobs: React.FC = () => {
   const [activeMenuJobId, setActiveMenuJobId] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  // State for Delete Confirmation
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Update filtered jobs when allJobs changes
   React.useEffect(() => {
@@ -76,6 +82,18 @@ export const Jobs: React.FC = () => {
     e.preventDefault();
     action();
     setActiveMenuJobId(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!jobToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteJob(jobToDelete.id);
+      setIsDeleteModalOpen(false);
+      setJobToDelete(null);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -161,7 +179,8 @@ export const Jobs: React.FC = () => {
                       <div className="h-px bg-gray-100 my-1"></div>
                       <button
                         onClick={(e) => handleAction(e, () => {
-                          if (confirm('Are you sure you want to delete this job?')) deleteJob(job.id);
+                          setJobToDelete(job);
+                          setIsDeleteModalOpen(true);
                         })}
                         className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                       >
@@ -212,6 +231,18 @@ export const Jobs: React.FC = () => {
 
       <CreateJobDrawer isOpen={isCreateDrawerOpen} onClose={() => setIsCreateDrawerOpen(false)} />
       <JobDetailsModal isOpen={isDetailsModalOpen} onClose={() => setIsDetailsModalOpen(false)} job={selectedJob} />
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Job"
+        message={`Are you sure you want to delete ${jobToDelete?.title}? This will also remove all candidate assignments associated with this job.`}
+        confirmText="Delete Job"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };
+

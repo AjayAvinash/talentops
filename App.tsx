@@ -28,8 +28,8 @@ const App: React.FC = () => {
     healEmbeddings();
   }, []);
   return (
-    <AppProvider>
-      <ToastProvider>
+    <ToastProvider>
+      <AppProvider>
         <HashRouter>
           <Layout>
             <Routes>
@@ -43,9 +43,10 @@ const App: React.FC = () => {
             </Routes>
           </Layout>
         </HashRouter>
-        <ToastContainer />
-      </ToastProvider>
-    </AppProvider>
+      </AppProvider>
+      <ToastContainer />
+    </ToastProvider>
+
 
   );
 };

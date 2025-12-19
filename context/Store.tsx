@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Candidate, Job, Activity } from '../types';
 import { candidateService } from '../services/candidateService';
 import { jobService } from '../services/jobService';
 import { timelineService } from '../services/timelineService';
+import { supabase } from '../lib/supabase';
+import { useToast } from './ToastContext';
 
 interface AppContextType {
   candidates: Candidate[];
@@ -20,10 +22,14 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { addToast } = useToast();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Track IDs added via this client to avoid duplicate toasts
+  const recentlyAddedIds = useRef<Set<string>>(new Set());
 
   const fetchData = async () => {
     try {
@@ -34,7 +40,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ]);
       setCandidates(fetchedCandidates);
       setJobs(fetchedJobs);
-      // Future: Fetch timeline/activities. For now empty or we could fetch recent global events if API supported it.
     } catch (error) {
       console.error('Failed to fetch data', error);
     } finally {
@@ -44,30 +49,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     fetchData();
-  }, []);
+
+    // Set up realtime subscription for new candidates
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'candidates'
+        },
+        async (payload) => {
+          const newCandidate = payload.new as Candidate;
+
+          // If we didn't add this ourselves just now, show a toast
+          if (!recentlyAddedIds.current.has(newCandidate.id)) {
+            addToast(`New candidate added: ${newCandidate.name}`, 'success');
+
+            // Immediately update local state to include the new candidate
+            // (We might want to re-fetch or just append if payload is complete)
+            setCandidates(prev => {
+              if (prev.some(c => c.id === newCandidate.id)) return prev;
+              return [newCandidate, ...prev];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [addToast]);
 
   const addCandidate = async (newCandidateData: Omit<Candidate, 'id' | 'addedAt' | 'fitScore'>, source: 'manual' | 'upload' = 'manual') => {
     try {
-      // Check if candidate exists locally first (by email or phone if possible, but upsert returns the final object)
       const created = await candidateService.create(newCandidateData);
+
+      // Mark as recently added so realtime listener ignores it
+      recentlyAddedIds.current.add(created.id);
+      setTimeout(() => recentlyAddedIds.current.delete(created.id), 5000);
 
       setCandidates((prev) => {
         const index = prev.findIndex(c => c.id === created.id);
         if (index !== -1) {
-          // Update existing
           const updated = [...prev];
           updated[index] = created;
           return updated;
         }
-        // Add new
         return [created, ...prev];
       });
-
-      // Add timeline event only if it's a "New" addition (or if we want to track updates too)
-      // For now, let's fix the "double event" and "manual" vs "upload" distinction.
-      // If the candidate was just created (id was not in prev), add "New Candidate" event.
-      // However, the user says they get it twice. If N8N or something else adds one, we might not need this.
-      // But let's at least make it accurate.
 
       const isNew = !candidates.some(c => c.id === created.id);
       if (isNew) {
@@ -82,13 +114,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return created;
     } catch (e) {
       console.error(e);
-      alert('Error adding candidate');
+      addToast('Error adding candidate', 'error');
       return undefined;
     }
   };
 
   const updateCandidateStatus = async (id: string, status: Candidate['status']) => {
-    // Optimistic update for UI
     setCandidates((prev) =>
       prev.map((c) => (c.id === id ? { ...c, status } : c))
     );
@@ -100,7 +131,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCandidates((prev) => prev.filter((c) => c.id !== id));
     } catch (e) {
       console.error(e);
-      alert('Error deleting candidate');
+      addToast('Error deleting candidate', 'error');
     }
   };
 
@@ -113,7 +144,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setJobs(prev => [created, ...prev]);
     } catch (e) {
       console.error(e);
-      alert('Error adding job');
+      addToast('Error adding job', 'error');
     }
   };
 
@@ -123,7 +154,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setJobs(prev => prev.filter(j => j.id !== id));
     } catch (e) {
       console.error(e);
-      alert('Error deleting job');
+      addToast('Error deleting job', 'error');
     }
   };
 
@@ -133,7 +164,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setJobs(prev => prev.map(j => j.id === id ? { ...j, status } : j));
     } catch (e) {
       console.error(e);
-      alert('Error updating job status');
+      addToast('Error updating job status', 'error');
     }
   };
 
@@ -164,3 +195,4 @@ export const useApp = () => {
   }
   return context;
 };
+
